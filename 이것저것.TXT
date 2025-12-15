@@ -1,0 +1,380 @@
+아, 그렇군요! 현재 만드신 멋진 웹 인터페이스를 그대로 유지하면서, 데이터 저장소만 모두가 공유할 수 있는 구글 시트로 바꾸고 싶으신 것이죠.
+
+이것은 매우 흔하게 사용되는 방법이며, 코딩이 필요하지만 복잡한 서버를 구축하는 것보다는 훨씬 간단합니다. 바로 이어서 구현 방법을 안내해 드리겠습니다.
+
+💡 웹과 구글 시트를 연동하는 방법 (Google Apps Script 사용)
+웹 페이지(HTML/JS)와 구글 시트 간에 데이터를 주고받게 하려면 **Google Apps Script (GAS)**라는 구글의 자체 스크립트 언어를 사용해야 합니다.
+
+작동 원리:
+
+웹 페이지 (JS): 데이터 추가/수정/삭제 요청을 보냅니다.
+
+Google Apps Script (GAS): 이 요청을 받아 구글 시트의 데이터를 읽고, 쓰고, 수정하는 작업을 수행합니다.
+
+구글 시트: 모든 데이터가 중앙에 저장되어 공동 작업자들과 공유됩니다.
+
+1단계: 구글 스프레드시트 설정
+먼저 이전 답변에서 만든 시트를 준비합니다.
+
+시트 이름: 재고현황 (시트 이름이 정확해야 합니다.)
+
+열 이름: A1: 물품 이름, B1: 현재 수량, C1: 마지막 기록일
+
+2단계: Google Apps Script (GAS) 작성
+데이터를 처리할 코드를 작성하고 웹 서비스로 배포합니다.
+
+2-1. 스크립트 생성
+구글 스프레드시트 상단 메뉴에서 '확장 프로그램' > **'Apps Script'**를 클릭합니다.
+
+새로운 스크립트 편집기 창이 열립니다. 기본 파일인 코드.gs에 아래 코드를 모두 붙여넣기 하세요.
+
+JavaScript
+
+const SHEET_NAME = "재고현황"; // 1단계에서 설정한 시트 이름과 일치해야 합니다.
+
+// GET 요청 처리 (웹에서 재고 목록을 불러올 때 사용)
+function doGet(e) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  if (!sheet) {
+    return ContentService.createTextOutput(JSON.stringify({ error: "Sheet not found" }))
+           .setMimeType(ContentService.MimeType.JSON);
+  }
+  
+  // 데이터 읽기 (헤더 제외)
+  const dataRange = sheet.getDataRange();
+  const values = dataRange.getValues();
+  
+  // 데이터가 비어 있으면 빈 객체 반환
+  if (values.length <= 1) {
+    return ContentService.createTextOutput(JSON.stringify({}))
+           .setMimeType(ContentService.MimeType.JSON);
+  }
+  
+  const headers = values[0]; // 첫 번째 행은 헤더
+  const inventory = {};
+  
+  // 데이터를 JSON 객체 형태로 변환 (JS에서 사용하기 쉽도록)
+  for (let i = 1; i < values.length; i++) {
+    const row = values[i];
+    const itemName = row[0];
+    
+    // 물품 이름을 키로, 수량과 날짜를 값으로 저장
+    inventory[itemName] = {
+      quantity: row[1],
+      lastUpdated: row[2]
+    };
+  }
+  
+  // JSON 응답 반환
+  return ContentService.createTextOutput(JSON.stringify(inventory))
+         .setMimeType(ContentService.MimeType.JSON);
+}
+
+
+// POST 요청 처리 (웹에서 데이터 추가/수정/삭제 요청을 보낼 때 사용)
+function doPost(e) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  const lock = LockService.getScriptLock();
+  
+  try {
+    lock.waitLock(30000); // 30초 대기 (동시 수정 방지)
+    
+    // 웹에서 전달받은 JSON 데이터 파싱
+    const postData = JSON.parse(e.postData.contents);
+    const action = postData.action;
+    const itemName = postData.itemName;
+    const quantity = postData.quantity;
+    const date = postData.date || new Date().toLocaleDateString('ko-KR');
+    
+    // 전체 시트 데이터 읽기
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    let foundRowIndex = -1;
+    
+    // 물품 이름으로 행 찾기
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] === itemName) {
+        foundRowIndex = i + 1; // Apps Script는 1부터 시작
+        break;
+      }
+    }
+    
+    let result = { success: true };
+
+    // --- 데이터 처리 로직 ---
+    if (action === "ADD_UPDATE") {
+      const newQuantity = parseInt(quantity, 10);
+      
+      if (foundRowIndex !== -1) {
+        // 수정: 기존 행 업데이트
+        sheet.getRange(foundRowIndex, 2).setValue(newQuantity);
+        sheet.getRange(foundRowIndex, 3).setValue(date);
+      } else {
+        // 추가: 새 행 삽입
+        sheet.appendRow([itemName, newQuantity, date]);
+      }
+      result.message = "Item added/updated successfully";
+
+    } else if (action === "DELETE") {
+      if (foundRowIndex !== -1) {
+        // 삭제
+        sheet.deleteRow(foundRowIndex);
+        result.message = "Item deleted successfully";
+      } else {
+        result = { success: false, message: "Item not found for deletion" };
+      }
+    } else {
+      result = { success: false, message: "Invalid action" };
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify(result))
+           .setMimeType(ContentService.MimeType.JSON);
+
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ success: false, error: err.toString() }))
+           .setMimeType(ContentService.MimeType.JSON);
+  } finally {
+    lock.releaseLock(); // 잠금 해제
+  }
+}
+2-2. 웹 앱으로 배포
+스크립트 편집기 상단에서 '배포' > **'새 배포'**를 클릭합니다.
+
+**'유형 선택'**에서 **'웹 앱'**을 선택합니다.
+
+**'실행 계정'**은 본인 계정으로 설정합니다.
+
+**'액세스 권한'**을 '나만' 대신 '나를 포함한 모든 사용자' 또는 **'모든 사용자'**로 설정합니다. (다른 사람이 접근 가능하도록)
+
+**'배포'**를 누르고, 권한 승인 요청이 뜨면 **'액세스 승인'**을 클릭하여 시트에 접근 권한을 부여합니다.
+
+배포가 완료되면, **'웹 앱 URL'**이 표시됩니다. 이 URL을 복사해 두세요. (예: https://script.google.com/macros/s/.../exec)
+
+3단계: 웹 페이지 (JavaScript) 수정
+이제 현재 script.js 파일의 localStorage 관련 모든 로직을, 복사한 Apps Script URL을 호출하는 코드로 교체해야 합니다.
+
+3-1. Apps Script URL 설정
+script.js 파일 맨 위에 다음 줄을 추가하고, 복사한 URL로 바꿔 넣습니다.
+
+JavaScript
+
+// **여기에 2단계에서 복사한 웹 앱 URL을 붙여 넣으세요.**
+const GAS_URL = 'YOUR_DEPLOYED_WEB_APP_URL_HERE'; 
+3-2. script.js 핵심 함수 수정
+기존 script.js 파일의 핵심 함수들(saveInventory, renderInventory, deleteItem, addItem, updateQuantity)을 아래 코드로 모두 교체합니다.
+
+JavaScript
+
+// **여기에 2단계에서 복사한 웹 앱 URL을 붙여 넣으세요.**
+const GAS_URL = 'YOUR_DEPLOYED_WEB_APP_URL_HERE'; 
+
+let inventory = {}; // 로컬 저장소 대신 서버(GAS)에서 데이터를 불러올 것이므로 초기화만 해둡니다.
+
+// --- 데이터 통신 함수 ---
+
+// [수정] 재고 목록을 GAS에서 불러오는 함수 (GET 요청)
+async function fetchInventory() {
+    try {
+        const response = await fetch(GAS_URL);
+        const data = await response.json();
+
+        if (data.error) {
+            console.error("GAS Error:", data.error);
+            alert("데이터를 불러오는 데 실패했습니다: " + data.error);
+            return {};
+        }
+        return data; // GAS에서 불러온 전체 재고 객체
+    } catch (e) {
+        console.error("Fetch Error:", e);
+        alert("서버 연결에 실패했습니다. GAS URL을 확인하세요.");
+        return {};
+    }
+}
+
+// [수정] GAS로 데이터 변경 요청을 보내는 함수 (POST 요청)
+async function sendDataToGAS(action, itemName, quantity = 0) {
+    const date = new Date().toLocaleDateString('ko-KR');
+    
+    const payload = {
+        action: action, // ADD_UPDATE 또는 DELETE
+        itemName: itemName,
+        quantity: quantity,
+        date: date
+    };
+
+    try {
+        const response = await fetch(GAS_URL, {
+            method: 'POST',
+            body: JSON.stringify(payload),
+            headers: {
+                'Content-Type': 'text/plain;charset=utf-8', // GAS에서 JSON을 받기 위한 필수 설정
+            },
+        });
+        const result = await response.json();
+        
+        if (!result.success) {
+            alert("데이터 저장 실패: " + (result.error || result.message));
+        }
+        return result.success;
+    } catch (e) {
+        console.error("POST Error:", e);
+        alert("서버에 데이터를 전송하는 데 실패했습니다.");
+        return false;
+    }
+}
+
+// --- UI 및 로직 함수 ---
+
+// 자동 완성 목록 업데이트 (GAS에서 불러온 inventory 사용)
+function updateDatalist() {
+    const datalist = document.getElementById('existingItems');
+    datalist.innerHTML = ''; 
+
+    for (const name in inventory) {
+        const option = document.createElement('option');
+        option.value = name;
+        datalist.appendChild(option);
+    }
+}
+
+// [수정] 재고 수량을 직접 수정하고 저장하는 함수 (GAS로 전송)
+async function updateQuantity(itemName, newQuantity) {
+    newQuantity = parseInt(newQuantity, 10);
+
+    if (isNaN(newQuantity) || newQuantity < 0) {
+        alert('유효한 0 이상의 수량을 입력해야 합니다.');
+        renderInventory(); 
+        return;
+    }
+    
+    const success = await sendDataToGAS("ADD_UPDATE", itemName, newQuantity);
+    if (success) {
+        // 성공 시 데이터와 UI를 다시 로드
+        loadAndRender();
+    }
+}
+
+// [수정] UI 렌더링 함수 (GAS에서 불러온 데이터 사용)
+function renderInventory() {
+    const list = document.getElementById('inventoryList');
+    list.innerHTML = ''; 
+
+    for (const name in inventory) {
+        const item = inventory[name];
+        const row = list.insertRow(); 
+        row.insertCell(0).textContent = name;
+
+        const cellQuantity = row.insertCell(1);
+        let quantityText = item.quantity;
+        if (item.quantity === 0) {
+            quantityText += ' (주문 필요)';
+        }
+        cellQuantity.textContent = quantityText;
+        cellQuantity.onclick = () => enableEdit(cellQuantity, name, item.quantity);
+
+        row.insertCell(2).textContent = item.lastUpdated; 
+        
+        const cellAction = row.insertCell(3);
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = '삭제';
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.onclick = () => deleteItem(name);
+        cellAction.appendChild(deleteBtn);
+    }
+    
+    updateDatalist();
+}
+
+// 셀 편집 모드 활성화 (로직 유지)
+function enableEdit(cell, itemName, currentValue) {
+    if (cell.querySelector('input')) return;
+
+    cell.innerHTML = '';
+    
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.className = 'editable-input';
+    input.value = currentValue;
+    input.min = '0'; 
+    
+    cell.appendChild(input);
+    input.focus();
+    
+    const saveChanges = () => {
+        updateQuantity(itemName, input.value);
+    };
+
+    input.onblur = saveChanges; 
+    
+    input.onkeydown = (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault(); 
+            input.blur(); 
+        }
+    };
+}
+
+// [수정] 재고를 추가/갱신하는 함수 (GAS로 전송)
+async function addItem() {
+    const itemName = document.getElementById('itemName').value.trim();
+    const quantityInput = document.getElementById('itemQuantity').value;
+    const transactionType = document.getElementById('transactionType').value;
+    const inputQuantity = parseInt(quantityInput, 10);
+
+    if (!itemName || isNaN(inputQuantity) || inputQuantity <= 0) {
+        alert('물품 이름과 1개 이상의 유효한 수량을 입력해 주세요.');
+        return;
+    }
+    
+    // 현재 재고 확인 (입/출고 계산)
+    const currentQuantity = inventory[itemName] ? inventory[itemName].quantity : 0;
+    let newQuantity;
+    
+    if (transactionType === '입고') {
+        newQuantity = currentQuantity + inputQuantity;
+    } else { // 출고
+        if (currentQuantity < inputQuantity) {
+             alert(`${itemName}의 현재 재고(${currentQuantity})보다 출고 수량이 많습니다!`);
+             return;
+        }
+        newQuantity = currentQuantity - inputQuantity;
+    }
+    
+    const success = await sendDataToGAS("ADD_UPDATE", itemName, newQuantity);
+
+    if (success) {
+        document.getElementById('itemName').value = '';
+        document.getElementById('itemQuantity').value = '';
+        document.activeElement.blur(); 
+        loadAndRender(); // 성공 시 UI 갱신
+    }
+}
+
+// [수정] 특정 물품을 삭제하는 함수 (GAS로 전송)
+async function deleteItem(name) {
+    if (confirm(`정말로 물품 [${name}]의 재고 기록을 삭제하시겠습니까?`)) {
+        const success = await sendDataToGAS("DELETE", name);
+        if (success) {
+            loadAndRender(); // 성공 시 UI 갱신
+        }
+    }
+}
+
+// [수정] 데이터 로드 후 UI 렌더링을 처리하는 마스터 함수
+async function loadAndRender() {
+    inventory = await fetchInventory(); // 서버(GAS)에서 최신 데이터 로드
+    renderInventory(); // UI 갱신
+}
+
+// 페이지 로드 시 실행
+document.addEventListener('DOMContentLoaded', loadAndRender);
+4단계: 테스트 및 사용
+index.html, style.css, **수정된 script.js**를 저장합니다.
+
+script.js의 GAS_URL을 2단계에서 복사한 URL로 정확히 바꿨는지 확인합니다.
+
+index.html을 웹 브라우저로 엽니다.
+
+재고를 추가하거나 수정/삭제해 보세요. 변경 사항이 구글 시트에 즉시 반영되고, 다른 공유 사용자가 시트나 웹 페이지를 새로고침하면 최신 데이터가 보일 것입니다!
+
+이제 모든 공동 작업자가 같은 웹 인터페이스를 통해 실시간으로 재고를 관리할 수 있습니다!
