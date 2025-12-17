@@ -1,4 +1,4 @@
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbzIqr8_nmcYdhRmsm_TDidVjGafKCmHDr35LMUifU9DJgvMBqtKXBithsl4xSV2JGcMFw/exec'; 
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbyP-Vi6gepo_IrbyElVs2bF6-qWSbsnV9uosdrMHF1ntIEvp95UyQV23fjAYmKhm0WYMw/exec'; 
 
 let inventory = {};
 
@@ -157,4 +157,5 @@ function updateDatalist() {
 
 // 페이지 로드 시 실행
 document.addEventListener('DOMContentLoaded', loadAndRender);
+
 
