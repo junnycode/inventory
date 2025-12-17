@@ -59,7 +59,7 @@ function renderInventory() {
         const cellQuantity = row.insertCell(1);
         let qText = item.quantity;
         if (item.quantity === 0) qText += " (품절)";
-        else if (item.quantity <= 5) qText += " (부족)";
+        else if (item.quantity <= 1) qText += " (부족)";
         
         cellQuantity.textContent = qText;
         cellQuantity.style.cursor = "pointer";
@@ -158,4 +158,5 @@ async function loadAndRender() {
 
 document.addEventListener('DOMContentLoaded', loadAndRender);
 // 오류 생성시 문의 :seojun
+
 
