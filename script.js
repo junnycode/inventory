@@ -1,4 +1,4 @@
-const GAS_URL = '여기에_새_배포_URL_붙여넣기'; 
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzIqr8_nmcYdhRmsm_TDidVjGafKCmHDr35LMUifU9DJgvMBqtKXBithsl4xSV2JGcMFw/exec'; 
 
 let inventory = {}; 
 
@@ -105,3 +105,4 @@ function updateDatalist() {
 }
 
 document.addEventListener('DOMContentLoaded', loadAndRender);
+
