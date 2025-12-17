@@ -50,7 +50,7 @@ function renderInventory() {
         // [시각화] 수량에 따른 행 색상 변경
         if (item.quantity === 0) {
             row.style.backgroundColor = '#ffebee'; // 품절: 빨강
-        } else if (item.quantity <= 5) {
+        } else if (item.quantity <= 1) {
             row.style.backgroundColor = '#fff9c4'; // 부족: 노랑
         }
 
@@ -158,3 +158,4 @@ async function loadAndRender() {
 
 document.addEventListener('DOMContentLoaded', loadAndRender);
 // 오류 생성시 문의 :seojun
+
