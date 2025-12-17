@@ -3,46 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>간편 재고 관리 시스템</title>
-    <link rel="stylesheet" href="style.css"> </head>
+    <title>공유 재고 관리 시스템</title>
+    <link rel="stylesheet" href="style.css">
+</head>
 <body>
     <div class="container">
-        <h1>📦 간편 재고 관리</h1>
+        <h1>📦 재고 관리 시스템 (공유용)</h1>
 
-        <div class="input-form">
-            <h2>재고 기록 추가</h2>
-            <input type="text" id="itemName" list="existingItems" placeholder="물품 이름 (선택 또는 새로 입력)" required>
+        <div class="input-section">
+            <input type="text" id="itemName" list="existingItems" placeholder="물품 이름 입력">
+            <datalist id="existingItems"></datalist>
             
-            <datalist id="existingItems">
-                </datalist>
-
-            <input type="number" id="itemQuantity" placeholder="수량 (예: 10)" required min="0">
+            <input type="number" id="itemQuantity" placeholder="수량">
+            
             <select id="transactionType">
-                <option value="입고">입고 (재고 증가)</option>
-                <option value="출고">출고 (재고 감소)</option>
+                <option value="입고">입고 (+)</option>
+                <option value="출고">출고 (-)</option>
             </select>
-            <button onclick="addItem()">재고 기록 추가/갱신</button>
-            <p class="note">같은 물품 이름으로 기록하면 재고가 **갱신**됩니다. 출고 시 수량 확인!</p>
+            
+            <button onclick="addItem()">기록하기</button>
         </div>
 
         <hr>
 
-        <div class="inventory-display">
-            <h2>📈 현재 재고 현황</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>물품 이름</th>
-                        <th>현재 수량</th>
-                        <th>마지막 기록일</th>
-                        <th>작업</th>
-                    </tr>
-                </thead>
-                <tbody id="inventoryList">
-                    </tbody>
-            </table>
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="🔍 찾으시는 물품 이름을 입력하세요..." onkeyup="filterInventory()">
         </div>
+
+        <table id="inventoryTable">
+            <thead>
+                <tr>
+                    <th>물품 이름</th>
+                    <th>현재 수량</th>
+                    <th>마지막 기록일</th>
+                    <th>관리</th>
+                </tr>
+            </thead>
+            <tbody id="inventoryList">
+                </tbody>
+        </table>
     </div>
 
-    <script src="script.js"></script> </body>
+    <script src="script.js"></script>
+</body>
 </html>
