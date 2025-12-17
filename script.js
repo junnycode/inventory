@@ -1,3 +1,4 @@
+// 구글시트 데이터 저장, 데이터 이전 & 수정, 필요시 개발자에게 문의 하기,
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzhsDxby4zDcXM9VpmkF4ldZwiJ3k2PFKKqz3X_DiWr4gINb72osMZa3sSTzChNai7dOA/exec'; 
 
 let inventory = {}; 
@@ -12,8 +13,8 @@ async function loadAndRender() {
         console.error("데이터 로드 실패:", e);
     }
 }
-
-// 화면 그리기 (소수점 표시 대응)
+// 데이터 로드 실패는 100% 구글시트 연동에 문제가 있는겁니다, 데이터 시트 연결 확인 요청하시는게 좋습니다 
+// 화면 그리기 (소수점 표시 대응) 2025.12.18
 function renderInventory() {
     const list = document.getElementById('inventoryList');
     list.innerHTML = ''; 
@@ -22,7 +23,7 @@ function renderInventory() {
         const item = inventory[name];
         const row = list.insertRow(); 
         
-        // 시각적 강조: 0 혹은 1 이하 (소수점 포함)
+        //  0 혹은 1 이하 (소수점 포함)
         if (item.quantity === 0) {
             row.style.backgroundColor = '#fff1f0';
         } else if (item.quantity <= 1) {
@@ -37,6 +38,7 @@ function renderInventory() {
         
         // 숫자가 소수점일 경우 너무 길어지지 않게 처리할 수도 있지만, 
         // 여기서는 입력한 그대로 보여주기 위해 Number()를 사용합니다.
+        // 다만 소수점 4자리를 넘기지 말아주세요, 데이터 처리시 오류 발생 할수 있습니다.
         const displayQty = Number(item.quantity); 
 
         if (displayQty <= 1) {
@@ -105,7 +107,7 @@ function enableEdit(cell, name, current, unit) {
     input.onkeydown = (e) => { if(e.key === 'Enter') input.blur(); };
 }
 
-// 나머지 함수들 (sendDataToGAS, filterInventory, deleteItem 등은 이전과 동일)
+
 async function sendDataToGAS(action, itemName, quantity, unit) {
     const date = new Date().toLocaleDateString('ko-KR');
     try {
@@ -118,7 +120,7 @@ async function sendDataToGAS(action, itemName, quantity, unit) {
         return result.success;
     } catch (e) { return false; }
 }
-
+//검색 엔진 함수 입니다. 시트 데이터 행 기준 검색 합니다 toLowerCase 키워드 검색 부분 
 function filterInventory() {
     const query = document.getElementById('searchInput').value.toLowerCase();
     const rows = document.querySelectorAll('#inventoryList tr');
@@ -139,3 +141,4 @@ function updateDatalist() {
 }
 
 document.addEventListener('DOMContentLoaded', loadAndRender);
+
