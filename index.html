@@ -3,49 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> 꽃마름 편백정 공유 재고 관리 시스템</title>
+    <title>스마트 재고 관리</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
-        <h1>📦 재고 관리 시스템 (꽃마름&편백정담)</h1>
+        <h1>📦 재고 관리 시스템</h1>
 
         <div class="input-section">
-            <input type="text" id="itemName" list="existingItems" placeholder="물품 이름 입력">
+            <input type="text" id="itemName" list="existingItems" placeholder="물품 이름">
             <datalist id="existingItems"></datalist>
-            
-            <input type="number" id="itemQuantity" placeholder="수량">
-            
-            <select id="transactionType">
-                <option value="입고">입고 (+)</option>
-                <option value="출고">출고 (-)</option>
-            </select>
-            
-            <button onclick="addItem()">기록하기</button>
-        </div>
 
-        <hr>
+            <select id="itemUnit">
+                <option value="낱개">낱개(EA)</option>
+                <option value="박스">박스(BOX)</option>
+            </select>
+
+            <input type="number" id="itemQuantity" placeholder="수량">
+
+            <select id="transactionType">
+                <option value="입고">입고(+)</option>
+                <option value="출고">출고(-)</option>
+            </select>
+
+            <button onclick="addItem()" id="submitBtn">기록하기</button>
+        </div>
 
         <div class="search-container">
-            <input type="text" id="searchInput" placeholder="🔍 찾으시는 물품 이름을 입력하세요..." onkeyup="filterInventory()">
+            <input type="text" id="searchInput" placeholder="🔍 물품 이름 검색..." onkeyup="filterInventory()">
         </div>
 
-        <table id="inventoryTable">
-            <thead>
-                <tr>
-                    <th>물품 이름</th>
-                    <th>현재 수량</th>
-                    <th>마지막 기록일</th>
-                    <th>관리</th>
-                </tr>
-            </thead>
-            <tbody id="inventoryList">
-                </tbody>
-        </table>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>물품명</th>
+                        <th>수량</th>
+                        <th>기록일</th>
+                        <th>관리</th>
+                    </tr>
+                </thead>
+                <tbody id="inventoryList"></tbody>
+            </table>
+        </div>
     </div>
-
     <script src="script.js"></script>
 </body>
 </html>
-
-
