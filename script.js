@@ -41,7 +41,7 @@ function renderInventory() {
         const cellQty = row.insertCell(1);
         if (item.quantity !== undefined && item.quantity <= 1) {
             // 수량이 1개 이하일 때 (단위 포함 표시)
-            cellQty.innerHTML = `<span style="color:#d32f2f; font-weight:bold;">${item.quantity} (${item.unit || '낱개'})</span>`;
+            cellQty.innerHTML = `<span style="color:#d32f2f; font-weight:bold;">${item.quantity} (${item.unit || 'EA'})</span>`;
         } else {
             // 수량이 1개 초과일 때 (숫자만 표시)
             cellQty.textContent = item.quantity;
@@ -157,5 +157,6 @@ function updateDatalist() {
 
 // 페이지 로드 시 실행
 document.addEventListener('DOMContentLoaded', loadAndRender);
+
 
 
