@@ -84,6 +84,53 @@ th { background-color: #f8f9fa; }
 }
 
 .delete-btn:hover { background-color: #e53935; }
+.input-section {
+    display: flex;
+    flex-wrap: wrap; /* 공간이 부족하면 다음 줄로 넘김 /
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+/ 입력창 및 버튼 너비 조정 /
+.input-section input, 
+.input-section select, 
+.input-section button {
+    flex: 1 1 150px; / 최소 너비 150px을 유지하며 유연하게 늘어남 /
+    padding: 12px;
+    box-sizing: border-box; / 패딩이 너비에 영향을 주지 않도록 설정 /
+}
+
+/ 화면 폭이 480px 이하인 아주 작은 모바일 기기 설정 /
+@media (max-width: 480px) {
+    .container {
+        padding: 15px;
+    }
+
+    h1 {
+        font-size: 1.5rem;
+    }
+
+    .input-section {
+        flex-direction: column; / 무조건 세로로 정렬 /
+    }
+
+    .input-section input, 
+    .input-section select, 
+    .input-section button {
+        flex: 1 1 auto; / 너비를 꽉 채우도록 설정 /
+        width: 100%;
+    }
+
+    / 테이블 글자 크기 조정 */
+    table {
+        font-size: 13px;
+    }
+
+    th, td {
+        padding: 8px 4px;
+    }
+}
 
 /* 행 마우스 오버 효과 */
 tr:hover { filter: brightness(0.98); }
+
