@@ -1,183 +1,89 @@
-/* 전체 문서 기본 설정 */
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #e9eef7; 
-    color: #333;
-    line-height: 1.6;
-    margin: 0;
-    padding: 20px 0; 
-
-    /* Flexbox를 이용한 전체 내용 중앙 정렬 */
+    font-family: 'Pretendard', sans-serif;
+    background-color: #f4f7f6;
     display: flex;
-    justify-content: center; 
-    align-items: flex-start; 
-    min-height: 100vh; 
-}
-
-/* 컨테이너 (페이지 내용 전체를 감싸는 영역) */
-.container {
-    width: 100%;
-    max-width: 600px; 
-    margin: 0 15px; 
+    justify-content: center;
     padding: 20px;
-    background: #ffffff;
+}
+
+.container {
+    background-color: white;
+    padding: 30px;
     border-radius: 12px;
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: 800px;
 }
 
-h1 {
-    color: #1a73e8; 
-    text-align: center;
-    margin-bottom: 20px;
-    padding-bottom: 5px;
-    border-bottom: 3px solid #f0f0f0;
-}
+h1 { text-align: center; color: #333; }
 
-h2 {
-    color: #3c4043;
-    margin-top: 30px;
-    border-left: 4px solid #1a73e8;
-    padding-left: 10px;
-}
-
-/* 입력 폼 필드 스타일 */
-.input-form {
+.input-section {
     display: flex;
-    flex-wrap: wrap; 
-    gap: 10px; 
+    gap: 10px;
     margin-bottom: 20px;
-    padding: 15px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    background-color: #fcfcfc;
 }
 
-input[type="text"], input[type="number"], select {
-    padding: 12px;
-    border: 1px solid #ccc;
+input, select, button {
+    padding: 10px;
+    border: 1px solid #ddd;
     border-radius: 6px;
-    flex-grow: 1; 
-    min-width: 120px; 
 }
 
 button {
-    padding: 12px;
-    background-color: #1a73e8;
+    background-color: #4CAF50;
     color: white;
-    border: none;
-    border-radius: 6px;
     cursor: pointer;
-    transition: background-color 0.3s, transform 0.1s;
-    flex-grow: 1;
-    width: 100%; 
-    font-weight: bold;
+    border: none;
+    transition: 0.3s;
 }
 
-button:hover {
-    background-color: #1764cc;
+button:hover { background-color: #45a049; }
+
+/* [신규] 검색창 스타일 */
+.search-container {
+    margin-bottom: 15px;
 }
 
-button:active {
-    transform: scale(0.99);
-}
-
-/* **[개선] 테이블 영역: 모바일 가로 스크롤 방지** */
-.inventory-display {
-    overflow-x: auto; /* 테이블이 넘치면 이 부분만 스크롤됨 */
-    margin-bottom: 20px;
-}
-
-/* 테이블 스타일 개선 (시트 형식) */
-.inventory-display table {
-    min-width: 500px; /* 테이블의 최소 너비를 확보하여 내용이 좁아지는 것을 방지 */
+#searchInput {
     width: 100%;
-    border-collapse: collapse; 
-    margin-top: 15px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); 
-    border-radius: 8px; 
-    overflow: hidden; 
-    background-color: #ffffff; 
+    box-sizing: border-box;
+    padding: 12px;
+    border: 2px solid #e0e0e0;
+    font-size: 16px;
 }
 
-.inventory-display th, .inventory-display td {
-    padding: 10px 8px; /* **[개선] 패딩 축소** */
-    font-size: 0.85em; /* **[개선] 폰트 크기 축소** */
-    text-align: left;
-    border-left: 1px solid #f0f0f0; 
-    border-bottom: 1px solid #e0e0e0; 
+#searchInput:focus {
+    border-color: #4CAF50;
+    outline: none;
 }
 
-.inventory-display th:first-child,
-.inventory-display td:first-child {
-    border-left: none;
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
 }
 
-.inventory-display th {
-    background-color: #f5f7fa; 
-    color: #4a5568;
-    font-weight: 600;
-    position: sticky; 
-    top: 0;
-    z-index: 10;
-}
-
-.inventory-display tbody tr:nth-child(even) {
-    background-color: #fcfcfc; 
-}
-.inventory-display tbody tr:hover {
-    background-color: #e6f0ff; 
-    transition: background-color 0.2s;
-}
-
-.inventory-display tbody tr:last-child td {
-    border-bottom: none;
-}
-
-/* '작업' 버튼 크기 조정 */
-.delete-btn {
-    background-color: #dc3545;
-    padding: 4px 8px; /* **[개선] 버튼 패딩 축소** */
-    font-size: 0.8em; /* **[개선] 버튼 폰트 축소** */
-    border-radius: 4px;
-    color: white;
-    cursor: pointer;
-    border: none;
-}
-.delete-btn:hover {
-    background-color: #c82333;
-}
-
-.note {
-    font-size: 0.85em;
-    color: #666;
-    margin-top: 15px;
-    width: 100%; 
+th, td {
+    padding: 12px;
+    border-bottom: 1px solid #eee;
     text-align: center;
 }
 
-/* 작은 화면 (모바일) 대응 */
-@media (max-width: 480px) {
-    .container {
-        margin: 0;
-        padding: 10px;
-        border-radius: 0;
-        box-shadow: none;
-    }
-    .input-form > * {
-        width: 100%; 
-        min-width: auto;
-    }
-    /* **[개선] 입력 필드 높이 통일** */
-    input[type="text"], input[type="number"], select, button {
-        padding: 10px;
-    }
-}
+th { background-color: #f8f9fa; }
+
+/* 수량 수정 입력창 */
 .editable-input {
-    width: 80%;
-    padding: 4px;
-    border: 1px solid #1a73e8;
-    border-radius: 4px;
-    box-sizing: border-box;
-    font-size: 1em; /* 테이블 폰트 크기와 맞춤 */
-    text-align: right; /* 숫자를 오른쪽 정렬하여 보기 쉽게 함 */
+    width: 60px;
+    text-align: center;
 }
+
+.delete-btn {
+    background-color: #ff5252;
+    padding: 5px 10px;
+    font-size: 12px;
+}
+
+.delete-btn:hover { background-color: #e53935; }
+
+/* 행 마우스 오버 효과 */
+tr:hover { filter: brightness(0.98); }
