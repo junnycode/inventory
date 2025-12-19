@@ -3,111 +3,75 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbzhsDxby4zDcXM9VpmkF4ld
 
 let inventory = {}; 
 
-// 데이터 로드
+/**
+ * [데이터 로드] 서버에서 데이터를 가져옵니다.
+ */
 async function loadAndRender() {
     try {
         const response = await fetch(GAS_URL);
-        inventory = await response.json() || {};
+        const data = await response.json();
+        
+        if (data.error) {
+            alert("서버 오류: " + data.error);
+            return;
+        }
+        
+        inventory = data || {};
         renderInventory();
     } catch (e) {
         console.error("데이터 로드 실패:", e);
     }
 }
-// 데이터 로드 실패는 100% 구글시트 연동에 문제가 있는겁니다, 데이터 시트 연결 확인 요청하시는게 좋습니다 
-// 화면 그리기 (소수점 표시 대응) 2025.12.18
+
+/**
+ * [화면 렌더링] 성능 최적화를 위해 DocumentFragment를 사용합니다.
+ */
 function renderInventory() {
     const list = document.getElementById('inventoryList');
+    const fragment = document.createDocumentFragment(); // 가상 바구니 생성
     list.innerHTML = ''; 
 
     for (const name in inventory) {
         const item = inventory[name];
-        const row = list.insertRow(); 
+        const row = document.createElement('tr'); 
         
-        //  0 혹은 1 이하 (소수점 포함)
-        if (item.quantity === 0) {
-            row.style.backgroundColor = '#fff1f0';
-        } else if (item.quantity <= 1) {
-            row.style.backgroundColor = '#fffbe6';
+        // --- 1. 상태별 배경색 강조 (소수점 포함 1 이하 강조) ---
+        const displayQty = Number(item.quantity);
+        if (displayQty === 0) {
+            row.style.backgroundColor = '#fff1f0'; // 품절: 빨강
+        } else if (displayQty <= 1) {
+            row.style.backgroundColor = '#fffbe6'; // 부족: 노랑
         }
 
-        row.insertCell(0).textContent = name;
-
-        // 수량 + 단위 (소수점이 있을 경우 그대로 표시)
-        const cellQty = row.insertCell(1);
+        // --- 2. 내용 구성 (항상 단위 표시 + 소수점 대응) ---
         const unitLabel = item.unit || "낱개";
         
-        // 숫자가 소수점일 경우 너무 길어지지 않게 처리할 수도 있지만, 
-        // 여기서는 입력한 그대로 보여주기 위해 Number()를 사용합니다.
-        // 다만 소수점 4자리를 넘기지 말아주세요, 데이터 처리시 오류 발생 할수 있습니다.
-        const displayQty = Number(item.quantity); 
+        // 수량 표시 부분 (1 이하일 경우 빨간색 강조)
+        const qtyHtml = displayQty <= 1 
+            ? `<span style="color:#d32f2f; font-weight:bold;">${displayQty} ${unitLabel}</span>`
+            : `${displayQty} ${unitLabel}`;
 
-        if (displayQty <= 1) {
-            cellQty.innerHTML = `<span style="color:#d32f2f; font-weight:bold;">${displayQty} ${unitLabel}</span>`;
-        } else {
-            cellQty.textContent = `${displayQty} ${unitLabel}`;
-        }
+        row.innerHTML = `
+            <td>${name}</td>
+            <td style="cursor:pointer; font-weight: 500;" onclick="enableEdit(this, '${name}', ${displayQty}, '${unitLabel}')">
+                ${qtyHtml}
+            </td>
+            <td>${item.lastUpdated || "-"}</td>
+            <td>
+                <button class="delete-btn" onclick="deleteItem('${name}')">삭제</button>
+            </td>
+        `;
         
-        cellQty.style.cursor = "pointer";
-        cellQty.onclick = () => enableEdit(cellQty, name, displayQty, unitLabel);
-
-        row.insertCell(2).textContent = item.lastUpdated || "-"; 
-        
-        const cellAction = row.insertCell(3);
-        cellAction.innerHTML = `<button class="delete-btn" onclick="deleteItem('${name}')">삭제</button>`;
+        fragment.appendChild(row); // 가상 바구니에 행 추가
     }
+    
+    list.appendChild(fragment); // 마지막에 한 번만 화면에 출력 (속도 향상 핵심)
     updateDatalist();
 }
 
-// 기록하기 (parseFloat 적용)
-async function addItem() {
-    const name = document.getElementById('itemName').value.trim();
-    const unit = document.getElementById('itemUnit').value; 
-    // [수정] parseInt -> parseFloat (소수점 허용)
-    const qtyInput = parseFloat(document.getElementById('itemQuantity').value);
-    const type = document.getElementById('transactionType').value;
-
-    if (!name || isNaN(qtyInput)) {
-        alert("이름과 수량을 정확히 입력하세요.");
-        return;
-    }
-
-    const currentQty = inventory[name] ? Number(inventory[name].quantity) : 0;
-    let newQty = (type === '입고') ? currentQty + qtyInput : currentQty - qtyInput;
-
-    // 소수점 연산 시 발생하는 미세한 오차 방지 (소수점 2자리까지 고정 예시)
-    newQty = Math.round(newQty * 100) / 100;
-
-    if (newQty < 0) {
-        alert("재고가 부족합니다.");
-        return;
-    }
-
-    if (await sendDataToGAS("ADD_UPDATE", name, newQty, unit)) {
-        document.getElementById('itemName').value = '';
-        document.getElementById('itemQuantity').value = '';
-        await loadAndRender();
-    }
-}
-
-// 수량 수정 (소수점 대응)
-function enableEdit(cell, name, current, unit) {
-    if (cell.querySelector('input')) return;
-    // step="any" 추가로 수정 시에도 소수점 입력 가능하게 함
-    cell.innerHTML = `<input type="number" style="width:70px" value="${current}" step="any">`;
-    const input = cell.querySelector('input');
-    input.focus();
-    input.onblur = async () => {
-        const nextVal = parseFloat(input.value);
-        if(!isNaN(nextVal) && nextVal >= 0) {
-            if (await sendDataToGAS("ADD_UPDATE", name, nextVal, unit)) await loadAndRender();
-        } else {
-            await loadAndRender();
-        }
-    };
-    input.onkeydown = (e) => { if(e.key === 'Enter') input.blur(); };
-}
-
-
+/**
+ * [데이터 전송] 입고/출고/수정 데이터를 GAS로 보냅니다.
+ */
 async function sendDataToGAS(action, itemName, quantity, unit) {
     const date = new Date().toLocaleDateString('ko-KR');
     try {
@@ -118,27 +82,103 @@ async function sendDataToGAS(action, itemName, quantity, unit) {
         });
         const result = await response.json();
         return result.success;
-    } catch (e) { return false; }
+    } catch (e) {
+        alert("통신 중 오류가 발생했습니다.");
+        return false;
+    }
 }
-//검색 엔진 함수 입니다. 시트 데이터 행 기준 검색 합니다 toLowerCase 키워드 검색 부분 
+
+/**
+ * [입/출고 기록] 소수점 연산을 처리합니다.
+ */
+async function addItem() {
+    const name = document.getElementById('itemName').value.trim();
+    const unit = document.getElementById('itemUnit').value;
+    const qtyInput = parseFloat(document.getElementById('itemQuantity').value); // 소수점 허용
+    const type = document.getElementById('transactionType').value;
+
+    if (!name || isNaN(qtyInput)) {
+        alert("물품 이름과 수량을 정확히 입력하세요.");
+        return;
+    }
+
+    const currentQty = inventory[name] ? Number(inventory[name].quantity) : 0;
+    let newQty = (type === '입고') ? currentQty + qtyInput : currentQty - qtyInput;
+
+    // 부동 소수점 오차 방지 (소수점 2자리까지 반올림)
+    newQty = Math.round(newQty * 100) / 100;
+
+    if (newQty < 0) {
+        alert("재고가 부족하여 출고할 수 없습니다.");
+        return;
+    }
+
+    if (await sendDataToGAS("ADD_UPDATE", name, newQty, unit)) {
+        document.getElementById('itemName').value = '';
+        document.getElementById('itemQuantity').value = '';
+        await loadAndRender();
+    }
+}
+
+/**
+ * [수량 직접 수정] 표의 수량을 클릭했을 때 실행됩니다.
+ */
+function enableEdit(cell, name, current, unit) {
+    if (cell.querySelector('input')) return;
+    
+    // 소수점 입력을 위해 step="any" 추가
+    cell.innerHTML = `<input type="number" style="width:70px; text-align:center;" value="${current}" step="any">`;
+    const input = cell.querySelector('input');
+    input.focus();
+    
+    input.onblur = async () => {
+        const nextVal = parseFloat(input.value);
+        if(!isNaN(nextVal) && nextVal >= 0) {
+            const roundedVal = Math.round(nextVal * 100) / 100;
+            if (await sendDataToGAS("ADD_UPDATE", name, roundedVal, unit)) {
+                await loadAndRender();
+            }
+        } else {
+            await loadAndRender(); // 잘못된 입력 시 원래대로 복구
+        }
+    };
+    
+    input.onkeydown = (e) => { if(e.key === 'Enter') input.blur(); };
+}
+
+/**
+ * [검색 필터링]
+ */
 function filterInventory() {
     const query = document.getElementById('searchInput').value.toLowerCase();
     const rows = document.querySelectorAll('#inventoryList tr');
     rows.forEach(row => {
-        row.style.display = row.cells[0].textContent.toLowerCase().includes(query) ? "" : "none";
+        const itemName = row.cells[0].textContent.toLowerCase();
+        row.style.display = itemName.includes(query) ? "" : "none";
     });
 }
 
+/**
+ * [물품 삭제]
+ */
 async function deleteItem(name) {
-    if (confirm(`[${name}]을 삭제하시겠습니까?`)) {
-        if (await sendDataToGAS("DELETE", name)) await loadAndRender();
+    if (confirm(`[${name}] 물품을 삭제하시겠습니까?`)) {
+        if (await sendDataToGAS("DELETE", name)) {
+            await loadAndRender();
+        }
     }
 }
 
+/**
+ * [자동완성 리스트 업데이트]
+ */
 function updateDatalist() {
     const dl = document.getElementById('existingItems');
-    dl.innerHTML = Object.keys(inventory).map(n => `<option value="${n}">`).join('');
+    if (dl) {
+        dl.innerHTML = Object.keys(inventory).map(n => `<option value="${n}">`).join('');
+    }
 }
 
+// 초기 로드
 document.addEventListener('DOMContentLoaded', loadAndRender);
 
