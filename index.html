@@ -3,60 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> 꽃마름&편백정담 재고 관리</title>
+    <title>재고 관리 편백/꽃마름</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
-        <h1> 꽃마름& 편백정담 재고 관리  </h1>
+        <h1> 매장 재고 관리</h1>
 
         <div class="input-section">
-            <input type="text" id="itemName" list="existingItems" placeholder="물품 이름">
-            <datalist id="existingItems"></datalist>
+            <h3>물품 기록</h3>
+            <div class="input-grid">
+                <select id="itemCategory">
+                    <option value="채소">채소</option>
+                    <option value="과일">과일</option>
+                    <option value="고기">고기</option>
+                    <option value="소스">소스</option>
+                    <option value="식료품">식료품</option>
+                    <option value="비품">비품</option>
+                    <option value="주류">주류</option>
+                </select>
 
-            <select id="itemUnit">
-                <option value="EA">(EA)</option>
-                <option value="Box">(BOX)</option>
+                <input type="text" id="itemName" list="existingItems" placeholder="물품 이름">
+                <datalist id="existingItems"></datalist>
+
+                <select id="itemUnit">
+                    <option value="낱개">낱개</option>
+                    <option value="박스">박스</option>
+                </select>
+
+                <input type="number" id="itemQuantity" placeholder="수량" step="any">
+
+                <select id="transactionType">
+                    <option value="입고">입고(+)</option>
+                    <option value="출고">출고(-)</option>
+                </select>
+
+                <button onclick="addItem()" id="submitBtn">기록하기</button>
+            </div>
+        </div>
+
+        <hr>
+
+        <div class="filter-section">
+            <input type="text" id="searchInput" onkeyup="renderInventory()" placeholder="물품명 검색...">
+            
+            <select id="categoryFilter" onchange="renderInventory()">
+                <option value="전체">전체 카테고리 보기</option>
+                <option value="채소">채소</option>
+                <option value="과일">과일</option>
+                <option value="고기">고기</option>
+                <option value="소스">소스</option>
+                <option value="식료품">식료품</option>
+                <option value="비품">비품</option>
+                <option value="주류">주류</option>
             </select>
-
-            <input type="number" id="itemQuantity" placeholder="수량" step="any">
-
-            <select id="transactionType">
-                <option value="입고">입고(+)</option>
-                <option value="출고">출고(-)</option>
-            </select>
-
-            <button onclick="addItem()" id="submitBtn">기록하기</button>
-        </div>
- 
-        <div class="search-container">
-            <input type="text" id="searchInput" placeholder="🔍 물품 이름 검색..." onkeyup="filterInventory()">
         </div>
 
-        <div class="table-wrapper">
-            <table>
-                <thead>
-                    <tr>
-                        <th>물품명</th>
-                        <th>수량</th>
-                        <th>기록일</th>
-                        <th>관리</th>
-                    </tr>
-                </thead>
-                <tbody id="inventoryList"></tbody>
-            </table>
-        </div>
+        <table id="inventoryTable">
+            <thead>
+                <tr>
+                    <th>카테고리</th>
+                    <th>물품명</th>
+                    <th>수량</th>
+                    <th>기록일</th>
+                    <th>관리</th>
+                </tr>
+            </thead>
+            <tbody id="inventoryList">
+                </tbody>
+        </table>
     </div>
+
     <script src="script.js"></script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
