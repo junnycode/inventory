@@ -1,14 +1,9 @@
 <!DOCTYPE html>
 <html lang="ko">
-<body>
-    <div class="container">
-        <header>
-            <h1> <!DOCTYPE html>
-<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>매장 재고 관리 시스템</title>
+    <title> 편백&꽃마름  재고 관리 시스템</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -77,68 +72,4 @@
 
     <script src="script.js"></script>
 </body>
-</html>us 재고 관리 시스템</h1>
-        </header>
-
-        <section class="input-card">
-            <h3>물품 기록하기</h3>
-            <div class="input-grid">
-                <select id="itemCategory">
-                    <option value="채소">채소</option>
-                    <option value="과일">과일</option>
-                    <option value="고기">고기</option>
-                    <option value="소스">소스</option>
-                    <option value="식료품">식료품</option>
-                    <option value="비품">비품</option>
-                    <option value="주류">주류</option>
-                </select>
-
-                <input type="text" id="itemName" list="existingItems" placeholder="물품 이름">
-                <datalist id="existingItems"></datalist>
-
-                <select id="itemUnit">
-                    <option value="ea">낱개</option>
-                    <option value="Box">박스</option>
-                </select>
-
-                <input type="number" id="itemQuantity" placeholder="수량" step="any">
-
-                <select id="transactionType">
-                    <option value="입고">입고(+)</option>
-                    <option value="출고">출고(-)</option>
-                </select>
-
-                <button onclick="addItem()" id="submitBtn">기록하기</button>
-            </div>
-        </section>
-
-        <section class="filter-section">
-            <div class="search-bar">
-                <input type="text" id="searchInput" onkeyup="renderInventory()" placeholder="🔎 물품 이름으로 검색...">
-            </div>
-            
-            <div id="categoryButtons" class="category-tabs"></div>
-        </section>
-
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>카테고리</th>
-                        <th>물품명</th>
-                        <th>수량(단위)</th>
-                        <th>마지막 기록</th>
-                        <th>관리</th>
-                    </tr>
-                </thead>
-                <tbody id="inventoryList">
-                    <tr><td colspan="5" style="padding: 40px; color: #999;">데이터를 불러오는 중입니다...</td></tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <script src="script.js"></script>
-</body>
 </html>
-
