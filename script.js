@@ -2,39 +2,52 @@
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxfbwnnzFQmySLoJzu_TSr2T1F4bY8YrNzZLh7YDIqk8PPr19At-7N7akGy3e5IE2c62w/exec'; 
 
 let inventory = {}; 
+let currentCategory = '전체'; // 현재 선택된 카테고리 상태
 
-/**
- * [데이터 로드] 서버에서 최신 데이터를 가져옵니다.
- */
+// [추가] 내가 사용할 카테고리 목록 (여기에 추가하면 버튼이 자동으로 생깁니다)
+const categories = ["전체", "채소", "과일", "고기", "소스", "식료품", "비품", "주류"];
+
 async function loadAndRender() {
     try {
         const response = await fetch(GAS_URL);
-        const data = await response.json();
-        if (data.error) {
-            alert("서버 오류: " + data.error);
-            return;
-        }
-        inventory = data || {};
-        renderInventory();
-    } catch (e) {
-        console.error("데이터 로드 실패:", e);
-    }
+        inventory = await response.json() || {};
+        renderCategoryButtons(); // 버튼 먼저 생성
+        renderInventory();       // 리스트 출력
+    } catch (e) { console.error(e); }
 }
 
 /**
- * [화면 렌더링] 검색 + 카테고리 필터 + 정렬 + 성능 최적화
+ * [버튼 생성] 카테고리 버튼들을 화면에 그립니다.
+ */
+function renderCategoryButtons() {
+    const container = document.getElementById('categoryButtons');
+    container.innerHTML = ''; // 초기화
+
+    categories.forEach(cat => {
+        const btn = document.createElement('button');
+        btn.textContent = cat;
+        btn.className = 'category-btn';
+        if (cat === currentCategory) btn.classList.add('active');
+
+        btn.onclick = () => {
+            currentCategory = cat; // 상태 변경
+            renderCategoryButtons(); // 버튼 활성화 상태 업데이트
+            renderInventory();       // 목록 다시 그리기
+        };
+        container.appendChild(btn);
+    });
+}
+
+/**
+ * [화면 렌더링] 선택된 카테고리 버튼에 따라 필터링
  */
 function renderInventory() {
     const list = document.getElementById('inventoryList');
     const fragment = document.createDocumentFragment();
-    
-    // 현재 필터링 조건
     const searchQuery = document.getElementById('searchInput').value.toLowerCase();
-    const categoryFilter = document.getElementById('categoryFilter').value;
     
     list.innerHTML = ''; 
 
-    // 1. 카테고리순 -> 물품명순 정렬
     const sortedNames = Object.keys(inventory).sort((a, b) => {
         const catA = inventory[a].category;
         const catB = inventory[b].category;
@@ -42,20 +55,17 @@ function renderInventory() {
         return a.localeCompare(b);
     });
 
-    // 2. 필터링 및 행 생성
     sortedNames.forEach(name => {
         const item = inventory[name];
-        const itemCategory = item.category || "미분류";
         const displayQty = Number(item.quantity);
+        const itemCategory = item.category;
 
-        // 필터 조건 확인
-        const matchesCategory = (categoryFilter === "전체" || itemCategory === categoryFilter);
+        // [핵심 필터 로직] 버튼 카테고리와 검색어 동시 체크
+        const matchesCategory = (currentCategory === "전체" || itemCategory === currentCategory);
         const matchesSearch = name.toLowerCase().includes(searchQuery);
 
         if (matchesCategory && matchesSearch) {
             const row = document.createElement('tr'); 
-            
-            // 재고 상태 강조 (0개 또는 1개 이하)
             if (displayQty === 0) row.style.backgroundColor = '#fff1f0';
             else if (displayQty <= 1) row.style.backgroundColor = '#fffbe6';
 
@@ -76,13 +86,12 @@ function renderInventory() {
             fragment.appendChild(row);
         }
     });
-    
     list.appendChild(fragment);
     updateDatalists();
 }
 
 /**
- * [기록하기] 입고/출고 및 소수점 처리
+ * [데이터 기록] 입고/출고 처리 (소수점 포함)
  */
 async function addItem() {
     const category = document.getElementById('itemCategory').value;
@@ -91,21 +100,13 @@ async function addItem() {
     const qtyInput = parseFloat(document.getElementById('itemQuantity').value);
     const type = document.getElementById('transactionType').value;
 
-    if (!name || isNaN(qtyInput)) {
-        alert("이름과 수량을 정확히 입력하세요.");
-        return;
-    }
+    if (!name || isNaN(qtyInput)) return alert("정보를 입력하세요.");
 
     const currentQty = inventory[name] ? Number(inventory[name].quantity) : 0;
     let newQty = (type === '입고') ? currentQty + qtyInput : currentQty - qtyInput;
-
-    // 부동 소수점 오차 방지 (소수점 2자리 반올림)
     newQty = Math.round(newQty * 100) / 100;
 
-    if (newQty < 0) {
-        alert("재고가 부족합니다.");
-        return;
-    }
+    if (newQty < 0) return alert("재고가 부족합니다.");
 
     if (await sendDataToGAS("ADD_UPDATE", name, newQty, unit, category)) {
         document.getElementById('itemName').value = '';
@@ -114,29 +115,7 @@ async function addItem() {
     }
 }
 
-/**
- * [수량 클릭 수정] 소수점 대응
- */
-function enableEdit(cell, name, current, unit, category) {
-    if (cell.querySelector('input')) return;
-    cell.innerHTML = `<input type="number" style="width:70px; text-align:center;" value="${current}" step="any">`;
-    const input = cell.querySelector('input');
-    input.focus();
-    input.onblur = async () => {
-        const val = parseFloat(input.value);
-        if(!isNaN(val) && val >= 0) {
-            const rounded = Math.round(val * 100) / 100;
-            if (await sendDataToGAS("ADD_UPDATE", name, rounded, unit, category)) await loadAndRender();
-        } else {
-            await loadAndRender();
-        }
-    };
-    input.onkeydown = (e) => { if(e.key === 'Enter') input.blur(); };
-}
-
-/**
- * [데이터 전송]
- */
+// (나머지 sendDataToGAS, enableEdit, deleteItem 함수는 이전과 동일)
 async function sendDataToGAS(action, itemName, quantity, unit, category) {
     const date = new Date().toLocaleDateString('ko-KR');
     try {
@@ -147,31 +126,35 @@ async function sendDataToGAS(action, itemName, quantity, unit, category) {
         });
         const result = await response.json();
         return result.success;
-    } catch (e) {
-        alert("전송 중 오류가 발생했습니다.");
-        return false;
-    }
+    } catch (e) { return false; }
 }
 
-/**
- * [삭제]
- */
+function enableEdit(cell, name, current, unit, category) {
+    if (cell.querySelector('input')) return;
+    cell.innerHTML = `<input type="number" style="width:70px" value="${current}" step="any">`;
+    const input = cell.querySelector('input');
+    input.focus();
+    input.onblur = async () => {
+        const val = parseFloat(input.value);
+        if(!isNaN(val) && val >= 0) {
+            if (await sendDataToGAS("ADD_UPDATE", name, Math.round(val*100)/100, unit, category)) await loadAndRender();
+        } else { await loadAndRender(); }
+    };
+    input.onkeydown = (e) => { if(e.key === 'Enter') input.blur(); };
+}
+
 async function deleteItem(name) {
-    if (confirm(`[${name}] 물품을 완전히 삭제하시겠습니까?`)) {
+    if (confirm(`[${name}]을 삭제하시겠습니까?`)) {
         if (await sendDataToGAS("DELETE", name)) await loadAndRender();
     }
 }
 
-/**
- * [자동완성 업데이트]
- */
 function updateDatalists() {
     const dl = document.getElementById('existingItems');
-    if (dl) {
-        dl.innerHTML = Object.keys(inventory).map(n => `<option value="${n}">`).join('');
-    }
+    if(dl) dl.innerHTML = Object.keys(inventory).map(n => `<option value="${n}">`).join('');
 }
 
 document.addEventListener('DOMContentLoaded', loadAndRender);
+
 
 
